@@ -7,9 +7,9 @@ string Encrypt(string data, string key)
 		data.append(string(8 - data.size() % 8, '='));
 
 	//先把字串讀成c的字串；用uint64_t的指標去讀他的bit pattern
-	char * str1 = (char*)malloc(sizeof(char)*data.size());
-	strcpy(str1, data.c_str());
-	cout << str1;
+	char * str0 = (char*)malloc(sizeof(char)*data.size()); //指向回傳的字串起點 不可動 否則找不到原本的字串開頭
+	strcpy(str0, data.c_str());
+	char * str1 = str0; //迭代用
 	std::vector<std::bitset<64>> str2; // !! **重要用到的** !!
 	while (*str1 != NULL)
 	{	//little-endian process
@@ -17,7 +17,7 @@ string Encrypt(string data, string key)
 		temp[0] = str1[7];	temp[1] = str1[6];	temp[2] = str1[5];	temp[3] = str1[4];
 		temp[4] = str1[3];	temp[5] = str1[2];	temp[6] = str1[1];	temp[7] = str1[0];
 		str2.push_back(std::bitset<64>(*((uint64_t*)temp)));
-		str1 += 8;
+		str1 += 8; //指標指向下一個區塊
 	}
 
 	//讀key的bit pattern (key是16進制的字串)
@@ -54,19 +54,66 @@ string Encrypt(string data, string key)
 	//對每個block作操作
 
 	//key schedule
-	std::bitset<56> key56 = PC_1(key2);
+	std::bitset<56> key56 = PC_1(key2); //Permuted choice 1
 	std::string key56str = key56.to_string(); //key切分成左右兩半
 	std::bitset<28> key28L(string(key56str.begin(), key56str.begin() + 14)); //左半
 	std::bitset<28> key28R(string(key56str.begin() + 14, key56str.end())); //右半
 	//_key schedule
 
-	const int numOfBlocks = str2.size(); //算出總共有幾個blocks
+	const int numOfBlocks = str2.size(); //算出總共有幾個blocks, 每64bits作加密一次
 	for (int i = 0; i != numOfBlocks; ++i)
 	{
-		std::bitset<64> blockData; (str2[i]);
+		//initial permutation
+		str2.at(i) = IP(str2.at(i));
+
+		// Feistel cipher * 16 Round 
+		for (int round = 1; round != 17; ++round) //1~16round
+		{
+			//key schedule
+			if (round == 1 || round == 2 || round == 9 || round == 16)
+				shiftLeft(key28L, 1), shiftLeft(key28R, 1);
+			else
+				shiftLeft(key28L, 2), shiftLeft(key28R, 2);
+			std::bitset<48> key48 = //round key (48bits)
+				PC_2(bitset<56>(key28L.to_string() + key28R.to_string())); //Permuted choice 2
+			//_key schedule
+
+			//round with F funciton
+			std::string blockData(str2.at(i).to_string()); //bitset<64>
+			std::bitset<32> Li_(string(blockData.begin(), blockData.begin() + 32)); //L i-1
+			std::bitset<32> Ri_(string(blockData.begin() + 32, blockData.end())); //R i-1
+			std::bitset<32> Li = Ri_;
+			std::bitset<32> Ri = Li_ ^ F(Ri_, key48);
+			str2.at(i) = std::bitset<64>(string(Li.to_string() + Ri.to_string())); //回存進去data
+			//_round with F funciton
+		}
+
+		// 左右交換
+		shiftLeft(str2.at(i), 32);
+
+		//final permutation
+		str2.at(i) = IP_1(str2.at(i));
 	}
 
-	return string("test1");
+	//全部block已做完DES，現在要輸出成文字
+	//一個block輸出8個字
+	str1 = str0; //迭代用
+	for (size_t i = 0; i != str2.size(); ++i)	
+	{
+		uint64_t temp = str2.at(i).to_ullong();
+		char * tempPtr = (char *)(&temp);
+
+		//little-endian process
+		str1[0] = tempPtr[7];	tempPtr[1] = tempPtr[6];	tempPtr[2] = tempPtr[5];	str1[3] = tempPtr[4];
+		str1[4] = tempPtr[3];	tempPtr[5] = tempPtr[2];	tempPtr[6] = tempPtr[1];	str1[7] = tempPtr[0];
+
+		str1 += 8; //指標指向下一個區塊
+	}
+	return string(str0);
+
+	//輸出成字串再轉回來怕會怪怪的
+	//看你Decrypt要不要直接對str0作操作 把它變成globle之類的
+	//阿幹 這裡好像忘記釋放str0了ㄟ....算了 懶得改了
 }
 
 string Decrypt(string data, string key)
@@ -126,8 +173,9 @@ bitset<32> S_boxes(bitset<48> input)
 						   {{13,2,8,4,6,15,11,1,10,9,3,14,5,0,12,7},{1,15,13,8,10,3,7,4,12,5,6,11,0,14,9,2},{7,11,4,1,9,12,14,2,0,6,10,13,15,3,5,8},{2,1,14,7,4,10,8,13,15,12,9,0,3,5,6,11}} };
 	vector<bitset<4>> outputs(8);
 
-#pragma omp parallel for //試試看用openMP下去平行化查表 不一定會對 玩玩看!!
-	for (int i = 0; i != 8; ++i) //第幾個box
+	//試試看用openMP下去平行化查表 不一定會對 玩玩看!!
+#pragma omp parallel for 
+	for (int i = 0; i < 8; i++) //第幾個box
 	{
 		const int base = i * 6;
 		//算第幾列
@@ -186,6 +234,18 @@ bitset<48> PC_2(bitset<56> input)
 
 	return  output;
 
+}
+
+bitset<32> F(bitset<32> Ri_, bitset<48> roundKey)
+{
+	//Expansion
+	bitset<48> step1 = E(Ri_); // 32->48
+	//XOR with round key
+	bitset<48> step2 = step1 ^ roundKey;
+	//S-box substitution
+	bitset<32> step3 = S_boxes(step2);//48->32
+	//permutation P
+	return P(step3);
 }
 
 

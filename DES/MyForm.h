@@ -145,28 +145,28 @@ namespace DES {
 			// label2
 			// 
 			this->label2->AutoSize = true;
-			this->label2->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(136)));
+			this->label2->Font = (gcnew System::Drawing::Font(L"Consolas", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
 			this->label2->Location = System::Drawing::Point(3, 0);
 			this->label2->Name = L"label2";
-			this->label2->Size = System::Drawing::Size(45, 24);
+			this->label2->Size = System::Drawing::Size(60, 22);
 			this->label2->TabIndex = 2;
 			this->label2->Text = L"   0x";
 			// 
 			// keyTB
 			// 
-			this->keyTB->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(136)));
-			this->keyTB->Location = System::Drawing::Point(54, 3);
+			this->keyTB->Font = (gcnew System::Drawing::Font(L"Consolas", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->keyTB->Location = System::Drawing::Point(69, 3);
 			this->keyTB->Name = L"keyTB";
-			this->keyTB->Size = System::Drawing::Size(306, 25);
+			this->keyTB->Size = System::Drawing::Size(306, 26);
 			this->keyTB->TabIndex = 3;
 			// 
 			// button1
 			// 
 			this->button1->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(136)));
-			this->button1->Location = System::Drawing::Point(366, 3);
+			this->button1->Location = System::Drawing::Point(381, 3);
 			this->button1->Name = L"button1";
 			this->button1->Size = System::Drawing::Size(83, 35);
 			this->button1->TabIndex = 4;
@@ -234,8 +234,8 @@ namespace DES {
 			// pTB
 			// 
 			this->pTB->Dock = System::Windows::Forms::DockStyle::Fill;
-			this->pTB->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(136)));
+			this->pTB->Font = (gcnew System::Drawing::Font(L"Consolas", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
 			this->pTB->Location = System::Drawing::Point(3, 33);
 			this->pTB->Multiline = true;
 			this->pTB->Name = L"pTB";
@@ -245,8 +245,8 @@ namespace DES {
 			// cTB
 			// 
 			this->cTB->Dock = System::Windows::Forms::DockStyle::Fill;
-			this->cTB->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(136)));
+			this->cTB->Font = (gcnew System::Drawing::Font(L"Consolas", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
 			this->cTB->Location = System::Drawing::Point(262, 33);
 			this->cTB->Multiline = true;
 			this->cTB->Name = L"cTB";
@@ -256,8 +256,8 @@ namespace DES {
 			// dTB
 			// 
 			this->dTB->Dock = System::Windows::Forms::DockStyle::Fill;
-			this->dTB->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(136)));
+			this->dTB->Font = (gcnew System::Drawing::Font(L"Consolas", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
 			this->dTB->Location = System::Drawing::Point(521, 33);
 			this->dTB->Multiline = true;
 			this->dTB->Name = L"dTB";
@@ -287,12 +287,27 @@ namespace DES {
 
 	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e)
 	{
-		string key = strConv(keyTB->Text);
-		string plaintext = strConv(pTB->Text);
-		string ciphertext = Encrypt(plaintext, key);
-		string decrypted = Decrypt(ciphertext, key);
-		cTB->Text = strConv(ciphertext);
-		dTB->Text = strConv(decrypted);
+		try
+		{
+			string key = strConv(keyTB->Text);
+			string plaintext = strConv(pTB->Text);
+			string ciphertext = Encrypt(plaintext, key);
+			string decrypted = Decrypt(ciphertext, key);
+			cTB->Text = strConv(ciphertext);
+			dTB->Text = strConv(decrypted);
+		}
+		catch (const exception& e)
+		{
+			MessageBox::Show(strConv(e.what()), "ERROR", MessageBoxButtons::OK, MessageBoxIcon::Error);
+		}
+		catch (Exception ^ ex)
+		{
+			MessageBox::Show(ex->Message, "ERROR", MessageBoxButtons::OK, MessageBoxIcon::Error);
+		}
+		catch (...)
+		{
+			MessageBox::Show("Unknown error!!");
+		}
 	}
 	};
 }
