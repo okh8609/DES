@@ -135,12 +135,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Func.cpp" />
     <ClCompile Include="MyForm.cpp" />
+    <ClCompile Include="StrConv.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Func.h" />
     <ClInclude Include="MyForm.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="StrConv.h" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="MyForm.resx">

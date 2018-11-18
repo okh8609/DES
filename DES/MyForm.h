@@ -1,4 +1,6 @@
 #pragma once
+#include "StrConv.h"
+#include "Func.h"
 
 namespace DES {
 
@@ -8,6 +10,7 @@ namespace DES {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+	using namespace std;
 
 	/// <summary>
 	/// MyForm 的摘要
@@ -35,58 +38,23 @@ namespace DES {
 			}
 		}
 	private: System::Windows::Forms::TableLayoutPanel^  tableLayoutPanel1;
-	protected:
-
-
-
-
-
 	private: System::Windows::Forms::TableLayoutPanel^  tableLayoutPanel3;
 	private: System::Windows::Forms::Label^  label3;
 	private: System::Windows::Forms::Label^  label4;
 	private: System::Windows::Forms::Label^  label5;
-	private: System::Windows::Forms::TextBox^  textBox3;
-	private: System::Windows::Forms::TextBox^  textBox4;
-	private: System::Windows::Forms::TextBox^  textBox5;
+	private: System::Windows::Forms::TextBox^  pTB;
+	private: System::Windows::Forms::TextBox^  cTB;
+	private: System::Windows::Forms::TextBox^  dTB;
+
+
+
 	private: System::Windows::Forms::TableLayoutPanel^  tableLayoutPanel2;
 	private: System::Windows::Forms::Label^  label1;
 	private: System::Windows::Forms::FlowLayoutPanel^  flowLayoutPanel1;
 	private: System::Windows::Forms::Label^  label2;
-	private: System::Windows::Forms::TextBox^  textBox2;
+	private: System::Windows::Forms::TextBox^  keyTB;
+
 	private: System::Windows::Forms::Button^  button1;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	protected:
-
-
-
-
-
-
-
-	protected:
-
-
-
-
-
 
 	private:
 		/// <summary>
@@ -106,15 +74,15 @@ namespace DES {
 			this->label1 = (gcnew System::Windows::Forms::Label());
 			this->flowLayoutPanel1 = (gcnew System::Windows::Forms::FlowLayoutPanel());
 			this->label2 = (gcnew System::Windows::Forms::Label());
-			this->textBox2 = (gcnew System::Windows::Forms::TextBox());
+			this->keyTB = (gcnew System::Windows::Forms::TextBox());
 			this->button1 = (gcnew System::Windows::Forms::Button());
 			this->tableLayoutPanel3 = (gcnew System::Windows::Forms::TableLayoutPanel());
 			this->label3 = (gcnew System::Windows::Forms::Label());
 			this->label4 = (gcnew System::Windows::Forms::Label());
 			this->label5 = (gcnew System::Windows::Forms::Label());
-			this->textBox3 = (gcnew System::Windows::Forms::TextBox());
-			this->textBox4 = (gcnew System::Windows::Forms::TextBox());
-			this->textBox5 = (gcnew System::Windows::Forms::TextBox());
+			this->pTB = (gcnew System::Windows::Forms::TextBox());
+			this->cTB = (gcnew System::Windows::Forms::TextBox());
+			this->dTB = (gcnew System::Windows::Forms::TextBox());
 			this->tableLayoutPanel1->SuspendLayout();
 			this->tableLayoutPanel2->SuspendLayout();
 			this->flowLayoutPanel1->SuspendLayout();
@@ -167,7 +135,7 @@ namespace DES {
 			// flowLayoutPanel1
 			// 
 			this->flowLayoutPanel1->Controls->Add(this->label2);
-			this->flowLayoutPanel1->Controls->Add(this->textBox2);
+			this->flowLayoutPanel1->Controls->Add(this->keyTB);
 			this->flowLayoutPanel1->Controls->Add(this->button1);
 			this->flowLayoutPanel1->Location = System::Drawing::Point(3, 27);
 			this->flowLayoutPanel1->Name = L"flowLayoutPanel1";
@@ -185,14 +153,14 @@ namespace DES {
 			this->label2->TabIndex = 2;
 			this->label2->Text = L"   0x";
 			// 
-			// textBox2
+			// keyTB
 			// 
-			this->textBox2->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+			this->keyTB->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(136)));
-			this->textBox2->Location = System::Drawing::Point(54, 3);
-			this->textBox2->Name = L"textBox2";
-			this->textBox2->Size = System::Drawing::Size(306, 25);
-			this->textBox2->TabIndex = 3;
+			this->keyTB->Location = System::Drawing::Point(54, 3);
+			this->keyTB->Name = L"keyTB";
+			this->keyTB->Size = System::Drawing::Size(306, 25);
+			this->keyTB->TabIndex = 3;
 			// 
 			// button1
 			// 
@@ -204,6 +172,7 @@ namespace DES {
 			this->button1->TabIndex = 4;
 			this->button1->Text = L"Submit";
 			this->button1->UseVisualStyleBackColor = true;
+			this->button1->Click += gcnew System::EventHandler(this, &MyForm::button1_Click);
 			// 
 			// tableLayoutPanel3
 			// 
@@ -217,9 +186,9 @@ namespace DES {
 			this->tableLayoutPanel3->Controls->Add(this->label3, 0, 0);
 			this->tableLayoutPanel3->Controls->Add(this->label4, 1, 0);
 			this->tableLayoutPanel3->Controls->Add(this->label5, 2, 0);
-			this->tableLayoutPanel3->Controls->Add(this->textBox3, 0, 1);
-			this->tableLayoutPanel3->Controls->Add(this->textBox4, 1, 1);
-			this->tableLayoutPanel3->Controls->Add(this->textBox5, 2, 1);
+			this->tableLayoutPanel3->Controls->Add(this->pTB, 0, 1);
+			this->tableLayoutPanel3->Controls->Add(this->cTB, 1, 1);
+			this->tableLayoutPanel3->Controls->Add(this->dTB, 2, 1);
 			this->tableLayoutPanel3->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->tableLayoutPanel3->Location = System::Drawing::Point(3, 83);
 			this->tableLayoutPanel3->Name = L"tableLayoutPanel3";
@@ -262,38 +231,38 @@ namespace DES {
 			this->label5->TabIndex = 2;
 			this->label5->Text = L"  Decrypted";
 			// 
-			// textBox3
+			// pTB
 			// 
-			this->textBox3->Dock = System::Windows::Forms::DockStyle::Fill;
-			this->textBox3->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+			this->pTB->Dock = System::Windows::Forms::DockStyle::Fill;
+			this->pTB->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(136)));
-			this->textBox3->Location = System::Drawing::Point(3, 33);
-			this->textBox3->Multiline = true;
-			this->textBox3->Name = L"textBox3";
-			this->textBox3->Size = System::Drawing::Size(253, 239);
-			this->textBox3->TabIndex = 3;
+			this->pTB->Location = System::Drawing::Point(3, 33);
+			this->pTB->Multiline = true;
+			this->pTB->Name = L"pTB";
+			this->pTB->Size = System::Drawing::Size(253, 239);
+			this->pTB->TabIndex = 3;
 			// 
-			// textBox4
+			// cTB
 			// 
-			this->textBox4->Dock = System::Windows::Forms::DockStyle::Fill;
-			this->textBox4->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+			this->cTB->Dock = System::Windows::Forms::DockStyle::Fill;
+			this->cTB->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(136)));
-			this->textBox4->Location = System::Drawing::Point(262, 33);
-			this->textBox4->Multiline = true;
-			this->textBox4->Name = L"textBox4";
-			this->textBox4->Size = System::Drawing::Size(253, 239);
-			this->textBox4->TabIndex = 3;
+			this->cTB->Location = System::Drawing::Point(262, 33);
+			this->cTB->Multiline = true;
+			this->cTB->Name = L"cTB";
+			this->cTB->Size = System::Drawing::Size(253, 239);
+			this->cTB->TabIndex = 3;
 			// 
-			// textBox5
+			// dTB
 			// 
-			this->textBox5->Dock = System::Windows::Forms::DockStyle::Fill;
-			this->textBox5->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+			this->dTB->Dock = System::Windows::Forms::DockStyle::Fill;
+			this->dTB->Font = (gcnew System::Drawing::Font(L"微軟正黑體", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(136)));
-			this->textBox5->Location = System::Drawing::Point(521, 33);
-			this->textBox5->Multiline = true;
-			this->textBox5->Name = L"textBox5";
-			this->textBox5->Size = System::Drawing::Size(254, 239);
-			this->textBox5->TabIndex = 3;
+			this->dTB->Location = System::Drawing::Point(521, 33);
+			this->dTB->Multiline = true;
+			this->dTB->Name = L"dTB";
+			this->dTB->Size = System::Drawing::Size(254, 239);
+			this->dTB->TabIndex = 3;
 			// 
 			// MyForm
 			// 
@@ -316,6 +285,14 @@ namespace DES {
 #pragma endregion
 
 
-
-};
+	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e)
+	{
+		string key = strConv(keyTB->Text);
+		string plaintext = strConv(pTB->Text);
+		string ciphertext = Encrypt(plaintext, key);
+		string decrypted = Decrypt(ciphertext, key);
+		cTB->Text = strConv(ciphertext);
+		dTB->Text = strConv(decrypted);
+	}
+	};
 }

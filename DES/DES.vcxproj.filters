@@ -18,10 +18,27 @@
     <ClCompile Include="MyForm.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
+    <ClCompile Include="Func.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
+    <ClCompile Include="StrConv.cpp">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyForm.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
+    <ClInclude Include="Func.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="StrConv.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="MyForm.resx">
+      <Filter>資源檔</Filter>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>
