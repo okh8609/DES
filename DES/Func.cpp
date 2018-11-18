@@ -111,7 +111,7 @@ string Encrypt(string data, string key)
 	}
 	return string(str0);
 
-	//輸出成字串再轉回來怕會怪怪的
+	//輸出成System::String^再轉回來怕會怪怪的
 	//看你Decrypt要不要直接對str0作操作 把它變成globle之類的
 	//阿幹 這裡好像忘記釋放str0了ㄟ....算了 懶得改了
 }
