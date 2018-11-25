@@ -161,6 +161,7 @@ namespace DES {
 			this->keyTB->Name = L"keyTB";
 			this->keyTB->Size = System::Drawing::Size(306, 26);
 			this->keyTB->TabIndex = 3;
+			this->keyTB->Text = L"AFAFAFAFAFAFAFAF";
 			// 
 			// button1
 			// 
@@ -241,6 +242,7 @@ namespace DES {
 			this->pTB->Name = L"pTB";
 			this->pTB->Size = System::Drawing::Size(253, 239);
 			this->pTB->TabIndex = 3;
+			this->pTB->Text = L"ABCDEF0123456789";
 			// 
 			// cTB
 			// 
@@ -271,7 +273,7 @@ namespace DES {
 			this->ClientSize = System::Drawing::Size(784, 361);
 			this->Controls->Add(this->tableLayoutPanel1);
 			this->Name = L"MyForm";
-			this->Text = L"Data Encryption Standard";
+			this->Text = L"Data Encryption Standard (ECB)";
 			this->tableLayoutPanel1->ResumeLayout(false);
 			this->tableLayoutPanel2->ResumeLayout(false);
 			this->tableLayoutPanel2->PerformLayout();
@@ -287,14 +289,14 @@ namespace DES {
 
 	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e)
 	{
+		try
+		{
 			string key = strConv(keyTB->Text);
 			string plaintext = strConv(pTB->Text);
 			string ciphertext = Encrypt(plaintext, key);
 			string decrypted = Decrypt(ciphertext, key);
 			cTB->Text = strConv(ciphertext);
 			dTB->Text = strConv(decrypted);
-		try
-		{
 		}
 		catch (const exception& e)
 		{

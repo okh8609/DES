@@ -4,10 +4,10 @@ string Encrypt(string data, string key)
 {
 	//data補滿 64bits * n
 	if (data.size() % 16 != 0)
-		data.append(string(16 - data.size() % 16, '='));
+		data.append(string(16 - data.size() % 16, '0'));
 
-	//讀成bit pattern
-	std::vector<std::bitset<64>> strBlocks; // !! **重要用到的** !!
+	//data讀成bit pattern
+	std::vector<std::bitset<64>> strBlocks; // !! **重要用到的變數** !!
 	for (size_t i = 0; i < data.size(); i += 16) //每64bit讀一次 (16*4=64)
 	{
 		std::string block64temp;
@@ -66,7 +66,7 @@ string Encrypt(string data, string key)
 			throw std::domain_error("key must be hexadecimal.");	break;
 		}
 	}
-	std::bitset<64> key2(keyStr); // !! **重要用到的** !!
+	std::bitset<64> key2(keyStr); // !! **重要用到的變數** !!
 
 	//現在{ strBlocks是data(已經每個blocks分開); key2是key的bit pattern; }
 	//以下對每個block進行DES操作
@@ -74,8 +74,10 @@ string Encrypt(string data, string key)
 	//key schedule
 	std::bitset<56> key56 = PC_1(key2); //Permuted choice 1
 	std::string key56str = key56.to_string(); //key切分成左右兩半
-	std::bitset<28> key28L(string(key56str.begin(), key56str.begin() + 14)); //左半
-	std::bitset<28> key28R(string(key56str.begin() + 14, key56str.end())); //右半
+	std::bitset<28> key28L(string(key56str.begin(), key56str.begin() + 28)); //左半
+	std::bitset<28> key28R(string(key56str.begin() + 28, key56str.end())); //右半
+	//std::bitset<28> key28L(key56str.substr(0, 28)); //左半
+	//std::bitset<28> key28R(key56str.substr(28, 56)); //右半
 	//_key schedule
 
 	const int numOfBlocks = strBlocks.size(); //算出總共有幾個blocks, 每64bits作加密一次
@@ -92,6 +94,7 @@ string Encrypt(string data, string key)
 				shiftLeft(key28L, 1), shiftLeft(key28R, 1);
 			else
 				shiftLeft(key28L, 2), shiftLeft(key28R, 2);
+
 			std::bitset<48> key48 = //round key (48bits)
 				PC_2(bitset<56>(key28L.to_string() + key28R.to_string())); //Permuted choice 2
 			//_key schedule
@@ -101,7 +104,7 @@ string Encrypt(string data, string key)
 			std::bitset<32> Li_(string(blockData.begin(), blockData.begin() + 32)); //L i-1 (上次的左半邊)
 			std::bitset<32> Ri_(string(blockData.begin() + 32, blockData.end())); //R i-1 (上次的右半邊)
 			std::bitset<32> Li = Ri_; // (這次的左半邊)
-			std::bitset<32> Ri = Li_ ^ F(Ri_, key48); // 這次的右半邊
+			std::bitset<32> Ri = Li_ ^ F(Ri_, key48); // (這次的右半邊)
 			strBlocks.at(i) = std::bitset<64>(string(Li.to_string() + Ri.to_string())); //回存進去data
 			//_round with F funciton
 		}
@@ -154,46 +157,46 @@ string Decrypt(string data, string key)
 	return string("test2");
 }
 
-bitset<64> IP(bitset<64> input)
+bitset<64> IP(const bitset<64> &input)
 {
 	int keys[64] = { 58,50,42,34,26,18,10,2,60,52,44,36,28,20,12,4,62,54,46,38,30,22,14,6,64,56,48,40,32,24,16,8,57,49,41,33,25,17,9,1,59,51,43,35,27,19,11,3,61,53,45,37,29,21,13,5,63,55,47,39,31,23,15,7 };
 
 	bitset<64> output;
 	for (size_t i = 0; i < output.size(); i++)
 	{
-		output[i] = input[keys[i] - 1]; //index從0開始
+		output[63 - i] = input[64 - keys[i]]; //注意bitset的順序和string相反
 	}
 
 	return  output;
 }
 
-bitset<64> IP_1(bitset<64> input)
+bitset<64> IP_1(const bitset<64> &input)
 {
 	int keys[64] = { 40,8,48,16,56,24,64,32,39,7,47,15,55,23,63,31,38,6,46,14,54,22,62,30,37,5,45,13,53,21,61,29,36,4,44,12,52,20,60,28,35,3,43,11,51,19,59,27,34,2,42,10,50,18,58,26,33,1,41,9,49,17,57,25 };
 
 	bitset<64> output;
 	for (size_t i = 0; i < output.size(); i++)
 	{
-		output[i] = input[keys[i] - 1]; //index從0開始
+		output[63 - i] = input[64 - keys[i]]; //注意bitset的順序和string相反
 	}
 
 	return  output;
 }
 
-bitset<48> E(bitset<32> input)
+bitset<48> E(const bitset<32> &input)
 {
 	int keys[48] = { 32,1,2,3,4,5,4,5,6,7,8,9,8,9,10,11,12,13,12,13,14,15,16,17,16,17,18,19,20,21,20,21,22,23,24,25,24,25,26,27,28,29,28,29,30,31,32,1 };
 
 	bitset<48> output;
 	for (size_t i = 0; i < output.size(); i++)
 	{
-		output[i] = input[keys[i] - 1]; //index從0開始
+		output[47 - i] = input[32 - keys[i]]; //注意bitset的順序和string相反
 	}
 
 	return  output;
 }
 
-bitset<32> S_boxes(bitset<48> input)
+bitset<32> S_boxes(const bitset<48> &input)
 {
 	string inStr(input.to_string());
 	int sbox[8][4][16] = { {{14,4,13,1,2,15,11,8,3,10,6,12,5,9,0,7},{0,15,7,4,14,2,13,1,10,6,12,11,9,5,3,8},{4,1,14,8,13,6,2,11,15,12,9,7,3,10,5,0},{15,12,8,2,4,9,1,7,5,11,3,14,10,0,6,13}},
@@ -229,47 +232,47 @@ bitset<32> S_boxes(bitset<48> input)
 		outputs[4].to_string() + outputs[5].to_string() + outputs[6].to_string() + outputs[7].to_string());
 }
 
-bitset<32> P(bitset<32> input)
+bitset<32> P(const bitset<32> &input)
 {
 	int keys[32] = { 16,7,20,21,29,12,28,17,1,15,23,26,5,18,31,10,2,8,24,14,32,27,3,9,19,13,30,6,22,11,4,25 };
 
 	bitset<32> output;
 	for (size_t i = 0; i < output.size(); i++)
 	{
-		output[i] = input[keys[i] - 1]; //index從0開始
+		output[31 - i] = input[32 - keys[i]]; //注意bitset的順序和string相反
 	}
 
 	return  output;
 }
 
-bitset<56> PC_1(bitset<64> input)
+bitset<56> PC_1(const bitset<64> &input)
 {
 	int keys[56] = { 57,49,41,33,25,17,9,1,58,50,42,34,26,18,10,2,59,51,43,35,27,19,11,3,60,52,44,36,63,55,47,39,31,23,15,7,62,54,46,38,30,22,14,6,61,53,45,37,29,21,13,5,28,20,12,4 };
 
 	bitset<56> output;
 	for (size_t i = 0; i < output.size(); i++)
 	{
-		output[i] = input[keys[i] - 1]; //index從0開始
+		output[55 - i] = input[64 - keys[i]]; //注意bitset的順序和string相反
 	}
 
 	return  output;
 }
 
-bitset<48> PC_2(bitset<56> input)
+bitset<48> PC_2(const bitset<56> &input)
 {
 	int keys[48] = { 14,17,11,24,1,5,3,28,15,6,21,10,23,19,12,4,26,8,16,7,27,20,13,2,41,52,31,37,47,55,30,40,51,45,33,48,44,49,39,56,34,53,46,42,50,36,29,32 };
 
 	bitset<48> output;
 	for (size_t i = 0; i < output.size(); i++)
 	{
-		output[i] = input[keys[i] - 1]; //index從0開始
+		output[47 - i] = input[56 - keys[i]]; //注意bitset的順序和string相反
 	}
 
 	return  output;
 
 }
 
-bitset<32> F(bitset<32> Ri_, bitset<48> roundKey)
+bitset<32> F(const bitset<32> &Ri_, const bitset<48> &roundKey)
 {
 	//Expansion
 	bitset<48> step1 = E(Ri_); // 32->48
