@@ -14,7 +14,9 @@ string Encrypt(string data,string key);
 string Decrypt(string data, string key);
 
 bitset<64> IP(const bitset<64>& input); //Initial permutation (IP) [ 64-64 ]
+bitset<64> IP_reverse(const bitset<64>& input); //Initial permutation (IP) [ 64-64 ]
 bitset<64> IP_1(const bitset<64>& input); //IP^-1 [ 64-64 ]
+bitset<64> IP_1_reverse(const bitset<64>& input); //IP^-1 [ 64-64 ]
 bitset<48> E(const bitset<32>& input); //Expansion function [ 32-48 ]
 bitset<32> S_boxes(const bitset<48>& input); //S-boxes [ 6-4 ]
 bitset<32> P(const bitset<32>& input); //Permutation [ 32-32 ]

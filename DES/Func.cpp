@@ -98,7 +98,8 @@ string Encrypt(string data, string key)
 			std::bitset<48> key48 = //round key (48bits)
 				PC_2(bitset<56>(key28L.to_string() + key28R.to_string())); //Permuted choice 2
 			//_key schedule
-
+			if (round == 16)
+				cout << key28L << "\n" << key28R << "\n" << strBlocks.at(i) << endl;
 			//round with F funciton
 			std::string blockData(strBlocks.at(i).to_string()); //bitset<64>
 			std::bitset<32> Li_(string(blockData.begin(), blockData.begin() + 32)); //L i-1 (上次的左半邊)
@@ -108,10 +109,8 @@ string Encrypt(string data, string key)
 			strBlocks.at(i) = std::bitset<64>(string(Li.to_string() + Ri.to_string())); //回存進去data
 			//_round with F funciton
 		}
-
 		// 左右交換
 		shiftLeft(strBlocks.at(i), 32);
-
 		//final permutation
 		strBlocks.at(i) = IP_1(strBlocks.at(i));
 	}
@@ -154,7 +153,164 @@ string Encrypt(string data, string key)
 
 string Decrypt(string data, string key)
 {
-	return string("test2");
+	//data補滿 64bits * n
+	if (data.size() % 16 != 0)
+		data.append(string(16 - data.size() % 16, '0'));
+
+	//data讀成bit pattern
+	std::vector<std::bitset<64>> strBlocks; // !! **重要用到的變數** !!
+	for (size_t i = 0; i < data.size(); i += 16) //每64bit讀一次 (16*4=64)
+	{
+		std::string block64temp;
+		for (size_t j = 0; j < 16; j++) //每個字符，轉成binary
+		{
+			switch (data.at(i + j))
+			{
+			case '0': block64temp.append("0000"); break;
+			case '1': block64temp.append("0001"); break;
+			case '2': block64temp.append("0010"); break;
+			case '3': block64temp.append("0011"); break;
+			case '4': block64temp.append("0100"); break;
+			case '5': block64temp.append("0101"); break;
+			case '6': block64temp.append("0110"); break;
+			case '7': block64temp.append("0111"); break;
+			case '8': block64temp.append("1000"); break;
+			case '9': block64temp.append("1001"); break;
+			case 'A': block64temp.append("1010"); break;
+			case 'B': block64temp.append("1011"); break;
+			case 'C': block64temp.append("1100"); break;
+			case 'D': block64temp.append("1101"); break;
+			case 'E': block64temp.append("1110"); break;
+			case 'F': block64temp.append("1111"); break;
+			default:
+				throw std::domain_error("data must be hexadecimal.");	break;
+			}
+		}
+		strBlocks.push_back(std::bitset<64>(block64temp));
+	}
+
+	//讀key的bit pattern (key是16進制的字串)
+	if (key.size() != 16) //金鑰長度必須為64-bits
+		throw std::length_error("key must 64-bit string.");
+	string keyStr;
+	for (int i = 0; i != key.size(); ++i)
+	{
+		switch (key.at(i))
+		{
+		case '0': keyStr.append("0000"); break;
+		case '1': keyStr.append("0001"); break;
+		case '2': keyStr.append("0010"); break;
+		case '3': keyStr.append("0011"); break;
+		case '4': keyStr.append("0100"); break;
+		case '5': keyStr.append("0101"); break;
+		case '6': keyStr.append("0110"); break;
+		case '7': keyStr.append("0111"); break;
+		case '8': keyStr.append("1000"); break;
+		case '9': keyStr.append("1001"); break;
+		case 'A': keyStr.append("1010"); break;
+		case 'B': keyStr.append("1011"); break;
+		case 'C': keyStr.append("1100"); break;
+		case 'D': keyStr.append("1101"); break;
+		case 'E': keyStr.append("1110"); break;
+		case 'F': keyStr.append("1111"); break;
+		default:
+			throw std::domain_error("key must be hexadecimal.");	break;
+		}
+	}
+	std::bitset<64> key2(keyStr); // !! **重要用到的變數** !!
+
+	//現在{ strBlocks是data(已經每個blocks分開); key2是key的bit pattern; }
+	//以下對每個block進行DES操作
+
+	//key schedule
+	std::bitset<56> key56 = PC_1(key2); //Permuted choice 1
+	std::string key56str = key56.to_string(); //key切分成左右兩半
+	std::bitset<28> key28L(string(key56str.begin(), key56str.begin() + 28)); //左半
+	std::bitset<28> key28R(string(key56str.begin() + 28, key56str.end())); //右半
+	//std::bitset<28> key28L(key56str.substr(0, 28)); //左半
+	//std::bitset<28> key28R(key56str.substr(28, 56)); //右半
+	//_key schedule
+	const int numOfBlocks = strBlocks.size(); //算出總共有幾個blocks, 每64bits作加密一次
+	for (int i = 0; i != numOfBlocks; ++i)
+	{
+		for (int round = 1; round != 17; ++round) //1~16round  先把key用城最後一個
+		{
+			//key schedule
+			if (round == 1 || round == 2 || round == 9 || round == 16)
+				shiftLeft(key28L, 1), shiftLeft(key28R, 1);
+			else
+				shiftLeft(key28L, 2), shiftLeft(key28R, 2);
+		}
+	}
+	cout << key28L << "\n" << key28R << endl;
+	//const int numOfBlocks = strBlocks.size(); //算出總共有幾個blocks, 每64bits作加密一次
+	for (int i = 0; i != numOfBlocks; ++i)
+	{
+		//reverse final permutation
+		strBlocks.at(i) = IP_1_reverse(strBlocks.at(i));
+		// 左右交換
+		shiftLeft(strBlocks.at(i), 32);
+		// Feistel cipher * 16 Round decode
+		for (int round = 16; round != 0; --round) //1~16round
+		{
+			std::bitset<48> key48 = //round key (48bits)
+				PC_2(bitset<56>(key28L.to_string() + key28R.to_string())); //Permuted choice 2
+			//_key schedule
+			//round with F funciton
+			std::string blockData(strBlocks.at(i).to_string()); //bitset<64>
+			std::bitset<32> Li(string(blockData.begin(), blockData.begin() + 32)); //L i-1 (這次的左半邊)
+			std::bitset<32> Ri(string(blockData.begin() + 32, blockData.end())); //R i-1 (這次的右半邊)
+			std::bitset<32> Ri_ = Li; // (上次的右半邊)
+			std::bitset<32> Li_ = Ri ^ F(Ri_, key48); // (這次的右半邊)
+			strBlocks.at(i) = std::bitset<64>(string(Li_.to_string() + Ri_.to_string())); //回存進去data
+			//_round with F funciton
+
+			//key schedule
+			if (round == 1 || round == 2 || round == 9 || round == 16)
+				shiftRight(key28L, 1), shiftRight(key28R, 1);
+			else
+				shiftRight(key28L, 2), shiftRight(key28R, 2);
+		}
+
+		//reverse initial permutation
+		strBlocks.at(i) = IP_reverse(strBlocks.at(i));
+		cout << strBlocks.at(i) << endl;
+	}
+
+	//全部block已做完DES，現在要輸出成文字
+	std::string resultData; //存放所有結果的bit pattern
+	std::string outputData; //輸出的回傳字串
+	for (auto i : strBlocks)
+		resultData.append(i.to_string());
+	//輸出成hexadecimal
+	for (size_t i = 0; i < resultData.size(); i += 4)
+	{
+		// 4bits 為一個hexadecimal字符
+		std::string result4b;
+		result4b.push_back(resultData.at(i));
+		result4b.push_back(resultData.at(i + 1));
+		result4b.push_back(resultData.at(i + 2));
+		result4b.push_back(resultData.at(i + 3));
+		// 建立輸出
+		if (result4b == string("0000")) outputData.push_back('0');
+		else if (result4b == string("0001")) outputData.push_back('1');
+		else if (result4b == string("0010")) outputData.push_back('2');
+		else if (result4b == string("0011")) outputData.push_back('3');
+		else if (result4b == string("0100")) outputData.push_back('4');
+		else if (result4b == string("0101")) outputData.push_back('5');
+		else if (result4b == string("0110")) outputData.push_back('6');
+		else if (result4b == string("0111")) outputData.push_back('7');
+		else if (result4b == string("1000")) outputData.push_back('8');
+		else if (result4b == string("1001")) outputData.push_back('9');
+		else if (result4b == string("1010")) outputData.push_back('A');
+		else if (result4b == string("1011")) outputData.push_back('B');
+		else if (result4b == string("1100")) outputData.push_back('C');
+		else if (result4b == string("1101")) outputData.push_back('D');
+		else if (result4b == string("1110")) outputData.push_back('E');
+		else if (result4b == string("1111")) outputData.push_back('F');
+		else throw std::domain_error("Conversion to hexadecimal error.");
+	}
+	return outputData;
 }
 
 bitset<64> IP(const bitset<64> &input)
@@ -170,6 +326,19 @@ bitset<64> IP(const bitset<64> &input)
 	return  output;
 }
 
+bitset<64> IP_reverse(const bitset<64>& input)
+{
+	int keys[64] = { 58,50,42,34,26,18,10,2,60,52,44,36,28,20,12,4,62,54,46,38,30,22,14,6,64,56,48,40,32,24,16,8,57,49,41,33,25,17,9,1,59,51,43,35,27,19,11,3,61,53,45,37,29,21,13,5,63,55,47,39,31,23,15,7 };
+
+	bitset<64> output;
+	for (size_t i = 0; i < output.size(); i++)
+	{
+		output[64 - keys[i]] = input[63 - i]; //注意bitset的順序和string相反
+	}
+
+	return  output;
+}
+
 bitset<64> IP_1(const bitset<64> &input)
 {
 	int keys[64] = { 40,8,48,16,56,24,64,32,39,7,47,15,55,23,63,31,38,6,46,14,54,22,62,30,37,5,45,13,53,21,61,29,36,4,44,12,52,20,60,28,35,3,43,11,51,19,59,27,34,2,42,10,50,18,58,26,33,1,41,9,49,17,57,25 };
@@ -178,6 +347,19 @@ bitset<64> IP_1(const bitset<64> &input)
 	for (size_t i = 0; i < output.size(); i++)
 	{
 		output[63 - i] = input[64 - keys[i]]; //注意bitset的順序和string相反
+	}
+
+	return  output;
+}
+
+bitset<64> IP_1_reverse(const bitset<64>& input)
+{
+	int keys[64] = { 40,8,48,16,56,24,64,32,39,7,47,15,55,23,63,31,38,6,46,14,54,22,62,30,37,5,45,13,53,21,61,29,36,4,44,12,52,20,60,28,35,3,43,11,51,19,59,27,34,2,42,10,50,18,58,26,33,1,41,9,49,17,57,25 };
+
+	bitset<64> output;
+	for (size_t i = 0; i < output.size(); i++)
+	{
+		output[64 - keys[i]] = input[63 - i]; //注意bitset的順序和string相反
 	}
 
 	return  output;
