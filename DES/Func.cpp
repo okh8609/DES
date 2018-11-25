@@ -3,25 +3,43 @@
 string Encrypt(string data, string key)
 {
 	//data補滿 64bits * n
-	if (data.size() % 8 != 0)
-		data.append(string(8 - data.size() % 8, '='));
+	if (data.size() % 16 != 0)
+		data.append(string(16 - data.size() % 16, '='));
 
-	//先把字串讀成c的字串；用uint64_t的指標去讀他的bit pattern
-	char * str0 = (char*)malloc(sizeof(char)*data.size()); //指向回傳的字串起點 不可動 否則找不到原本的字串開頭
-	strcpy(str0, data.c_str());
-	char * str1 = str0; //迭代用
-	std::vector<std::bitset<64>> str2; // !! **重要用到的** !!
-	while (*str1 != NULL)
-	{	//little-endian process
-		char temp[8];
-		temp[0] = str1[7];	temp[1] = str1[6];	temp[2] = str1[5];	temp[3] = str1[4];
-		temp[4] = str1[3];	temp[5] = str1[2];	temp[6] = str1[1];	temp[7] = str1[0];
-		str2.push_back(std::bitset<64>(*((uint64_t*)temp)));
-		str1 += 8; //指標指向下一個區塊
+	//讀成bit pattern
+	std::vector<std::bitset<64>> strBlocks; // !! **重要用到的** !!
+	for (size_t i = 0; i < data.size(); i += 16) //每64bit讀一次 (16*4=64)
+	{
+		std::string block64temp;
+		for (size_t j = 0; j < 16; j++) //每個字符，轉成binary
+		{
+			switch (data.at(i + j))
+			{
+			case '0': block64temp.append("0000"); break;
+			case '1': block64temp.append("0001"); break;
+			case '2': block64temp.append("0010"); break;
+			case '3': block64temp.append("0011"); break;
+			case '4': block64temp.append("0100"); break;
+			case '5': block64temp.append("0101"); break;
+			case '6': block64temp.append("0110"); break;
+			case '7': block64temp.append("0111"); break;
+			case '8': block64temp.append("1000"); break;
+			case '9': block64temp.append("1001"); break;
+			case 'A': block64temp.append("1010"); break;
+			case 'B': block64temp.append("1011"); break;
+			case 'C': block64temp.append("1100"); break;
+			case 'D': block64temp.append("1101"); break;
+			case 'E': block64temp.append("1110"); break;
+			case 'F': block64temp.append("1111"); break;
+			default:
+				throw std::domain_error("data must be hexadecimal.");	break;
+			}
+		}
+		strBlocks.push_back(std::bitset<64>(block64temp));
 	}
 
 	//讀key的bit pattern (key是16進制的字串)
-	if (key.size() != 8)
+	if (key.size() != 16) //金鑰長度必須為64-bits
 		throw std::length_error("key must 64-bit string.");
 	string keyStr;
 	for (int i = 0; i != key.size(); ++i)
@@ -45,13 +63,13 @@ string Encrypt(string data, string key)
 		case 'E': keyStr.append("1110"); break;
 		case 'F': keyStr.append("1111"); break;
 		default:
-			throw std::domain_error("key is not hexadecimal.");	break;
+			throw std::domain_error("key must be hexadecimal.");	break;
 		}
 	}
 	std::bitset<64> key2(keyStr); // !! **重要用到的** !!
 
-	//現在str2是data(已經每個blocks分開)；key2是key的bit pattern
-	//對每個block作操作
+	//現在{ strBlocks是data(已經每個blocks分開); key2是key的bit pattern; }
+	//以下對每個block進行DES操作
 
 	//key schedule
 	std::bitset<56> key56 = PC_1(key2); //Permuted choice 1
@@ -60,11 +78,11 @@ string Encrypt(string data, string key)
 	std::bitset<28> key28R(string(key56str.begin() + 14, key56str.end())); //右半
 	//_key schedule
 
-	const int numOfBlocks = str2.size(); //算出總共有幾個blocks, 每64bits作加密一次
+	const int numOfBlocks = strBlocks.size(); //算出總共有幾個blocks, 每64bits作加密一次
 	for (int i = 0; i != numOfBlocks; ++i)
 	{
 		//initial permutation
-		str2.at(i) = IP(str2.at(i));
+		strBlocks.at(i) = IP(strBlocks.at(i));
 
 		// Feistel cipher * 16 Round 
 		for (int round = 1; round != 17; ++round) //1~16round
@@ -79,41 +97,56 @@ string Encrypt(string data, string key)
 			//_key schedule
 
 			//round with F funciton
-			std::string blockData(str2.at(i).to_string()); //bitset<64>
-			std::bitset<32> Li_(string(blockData.begin(), blockData.begin() + 32)); //L i-1
-			std::bitset<32> Ri_(string(blockData.begin() + 32, blockData.end())); //R i-1
-			std::bitset<32> Li = Ri_;
-			std::bitset<32> Ri = Li_ ^ F(Ri_, key48);
-			str2.at(i) = std::bitset<64>(string(Li.to_string() + Ri.to_string())); //回存進去data
+			std::string blockData(strBlocks.at(i).to_string()); //bitset<64>
+			std::bitset<32> Li_(string(blockData.begin(), blockData.begin() + 32)); //L i-1 (上次的左半邊)
+			std::bitset<32> Ri_(string(blockData.begin() + 32, blockData.end())); //R i-1 (上次的右半邊)
+			std::bitset<32> Li = Ri_; // (這次的左半邊)
+			std::bitset<32> Ri = Li_ ^ F(Ri_, key48); // 這次的右半邊
+			strBlocks.at(i) = std::bitset<64>(string(Li.to_string() + Ri.to_string())); //回存進去data
 			//_round with F funciton
 		}
 
 		// 左右交換
-		shiftLeft(str2.at(i), 32);
+		shiftLeft(strBlocks.at(i), 32);
 
 		//final permutation
-		str2.at(i) = IP_1(str2.at(i));
+		strBlocks.at(i) = IP_1(strBlocks.at(i));
 	}
 
 	//全部block已做完DES，現在要輸出成文字
-	//一個block輸出8個字
-	str1 = str0; //迭代用
-	for (size_t i = 0; i != str2.size(); ++i)	
+	std::string resultData; //存放所有結果的bit pattern
+	std::string outputData; //輸出的回傳字串
+	for (auto i : strBlocks)
+		resultData.append(i.to_string());
+	//輸出成hexadecimal
+	for (size_t i = 0; i < resultData.size(); i += 4)
 	{
-		uint64_t temp = str2.at(i).to_ullong();
-		char * tempPtr = (char *)(&temp);
-
-		//little-endian process
-		str1[0] = tempPtr[7];	tempPtr[1] = tempPtr[6];	tempPtr[2] = tempPtr[5];	str1[3] = tempPtr[4];
-		str1[4] = tempPtr[3];	tempPtr[5] = tempPtr[2];	tempPtr[6] = tempPtr[1];	str1[7] = tempPtr[0];
-
-		str1 += 8; //指標指向下一個區塊
+		// 4bits 為一個hexadecimal字符
+		std::string result4b;
+		result4b.push_back(resultData.at(i));
+		result4b.push_back(resultData.at(i + 1));
+		result4b.push_back(resultData.at(i + 2));
+		result4b.push_back(resultData.at(i + 3));
+		// 建立輸出
+		if (result4b == string("0000")) outputData.push_back('0');
+		else if (result4b == string("0001")) outputData.push_back('1');
+		else if (result4b == string("0010")) outputData.push_back('2');
+		else if (result4b == string("0011")) outputData.push_back('3');
+		else if (result4b == string("0100")) outputData.push_back('4');
+		else if (result4b == string("0101")) outputData.push_back('5');
+		else if (result4b == string("0110")) outputData.push_back('6');
+		else if (result4b == string("0111")) outputData.push_back('7');
+		else if (result4b == string("1000")) outputData.push_back('8');
+		else if (result4b == string("1001")) outputData.push_back('9');
+		else if (result4b == string("1010")) outputData.push_back('A');
+		else if (result4b == string("1011")) outputData.push_back('B');
+		else if (result4b == string("1100")) outputData.push_back('C');
+		else if (result4b == string("1101")) outputData.push_back('D');
+		else if (result4b == string("1110")) outputData.push_back('E');
+		else if (result4b == string("1111")) outputData.push_back('F');
+		else throw std::domain_error("Conversion to hexadecimal error.");
 	}
-	return string(str0);
-
-	//輸出成System::String^再轉回來怕會怪怪的
-	//看你Decrypt要不要直接對str0作操作 把它變成globle之類的
-	//阿幹 這裡好像忘記釋放str0了ㄟ....算了 懶得改了
+	return outputData;
 }
 
 string Decrypt(string data, string key)

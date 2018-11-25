@@ -287,14 +287,14 @@ namespace DES {
 
 	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e)
 	{
-		try
-		{
 			string key = strConv(keyTB->Text);
 			string plaintext = strConv(pTB->Text);
 			string ciphertext = Encrypt(plaintext, key);
 			string decrypted = Decrypt(ciphertext, key);
 			cTB->Text = strConv(ciphertext);
 			dTB->Text = strConv(decrypted);
+		try
+		{
 		}
 		catch (const exception& e)
 		{
